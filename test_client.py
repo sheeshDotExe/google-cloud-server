@@ -1,39 +1,34 @@
-# Python program to implement client side of chat room.
 import socket
-import select
-import sys
+import time
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-if len(sys.argv) != 3:
-    print("Correct usage: script, IP address, port number")
-    exit()
-IP_address = str(sys.argv[1])
-Port = int(sys.argv[2])
-server.connect((IP_address, Port))
-print(sys.stdin.buffer)
+client_id = input("Enter your client ID: ")
 
-while True:
+IP = "viktor.asker.shop"
+PORT = 4444
+ROOM_ID = "PONG"
 
-    # maintains a list of possible input streams
-    sockets_list = [sys.stdin.fileno(), server.fileno()]
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((IP, PORT))
 
-    """ There are two possible input situations. Either the 
-	user wants to give manual input to send to other people, 
-	or the server is sending a message to be printed on the 
-	screen. Select returns from sockets_list, the stream that 
-	is reader for input. So for example, if the server wants 
-	to send a message, then the if condition will hold true 
-	below.If the user wants to send a message, the else 
-	condition will evaluate as true"""
+client.send(ROOM_ID.encode())
 
-    for socks in sockets_list:
-        if socks == server.fileno():
-            message = server.recv(2048).decode()
-            print(message)
-        elif socks == sys.stdin.fileno():
-            message = sys.stdin.readline()
-            server.send(message.encode())
-            sys.stdout.write("<You>")
-            sys.stdout.write(message)
-            sys.stdout.flush()
-server.close()
+print(client.recv(2048).decode())
+
+
+def send_data(data: str) -> None:
+    client.send(data.encode())
+
+
+def receive_data() -> str:
+    return client.recv(2048).decode()
+
+
+def main() -> None:
+    while True:
+        send_data(f"PING: {client_id}")
+        print(receive_data())
+        time.sleep(0.1)
+
+
+if __name__ == "__main__":
+    main()
