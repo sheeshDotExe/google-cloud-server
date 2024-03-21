@@ -1,34 +1,48 @@
-import socket
+import websocket
+import threading
 import time
 
-client_id = input("Enter your client ID: ")
 
-IP = "viktor.asker.shop"
-PORT = 4444
+IP = "ws://viktor.asker.shop"
+PORT = 443
 ROOM_ID = "PONG"
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((IP, PORT))
-
-client.send(ROOM_ID.encode())
-
-print(client.recv(2048).decode())
+CLIENT_ID = input("Enter client ID: ")
 
 
-def send_data(data: str) -> None:
-    client.send(data.encode())
-
-
-def receive_data() -> str:
-    return client.recv(2048).decode()
-
-
-def main() -> None:
+def ping_chat_room(ws: websocket.WebSocketApp):
     while True:
-        send_data(f"PING: {client_id}")
-        print(receive_data())
-        time.sleep(0.1)
+        ws.send_text(f"PING: {CLIENT_ID}")
+        time.sleep(1)
+
+
+def on_message(ws, message):
+    print(message)
+
+
+def on_error(ws, error):
+    print(error)
+
+
+def on_close(ws, close_status_code, close_msg):
+    print("### closed ###")
+
+
+def on_open(ws: websocket.WebSocketApp):
+    print("Opened connection")
+    ws.send_text(ROOM_ID)
+    threading.Thread(target=ping_chat_room, args=(ws,), daemon=True).start()
 
 
 if __name__ == "__main__":
-    main()
+    ws = websocket.WebSocketApp(
+        f"{IP}:{PORT}/ws",
+        on_open=on_open,
+        on_message=on_message,
+        on_error=on_error,
+        on_close=on_close,
+    )
+
+    ws.run_forever(
+        reconnect=5
+    )  # Set dispatcher to automatic reconnection, 5 second reconnect delay if connection closed unexpectedly
